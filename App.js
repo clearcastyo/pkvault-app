@@ -41,13 +41,11 @@ function getTitle(level) {
 
 function getBadges(uploadCount, likes) {
   const badges = [];
-
   if (uploadCount >= 1) badges.push("💀 First Upload");
   if (uploadCount >= 5) badges.push("⚔️ 5 Clips");
   if (uploadCount >= 10) badges.push("🔥 10 Clips");
   if (likes >= 50) badges.push("❤️ Popular PKer");
   if (likes >= 150) badges.push("📈 Viral Potential");
-
   return badges;
 }
 
@@ -55,21 +53,17 @@ function getBadges(uploadCount, likes) {
 export default function App() {
   const [tab, setTab] = useState("home");
   const [filter, setFilter] = useState("ALL");
-
   const [clips, setClips] = useState(INITIAL_CLIPS);
-
   const [profilePic, setProfilePic] = useState("");
   const [picInput, setPicInput] = useState("");
   const [videoInput, setVideoInput] = useState("");
-
   const [hearts, setHearts] = useState([]);
 
   const bigHeart = useRef(new Animated.Value(0)).current;
   const progress = useRef(new Animated.Value(0)).current;
 
-  /* ================= STATS ================= */
   const totalUploads = clips.length;
-  const totalLikes = clips.reduce((sum, c) => sum + (c.likes || 0), 0);
+  const totalLikes = clips.reduce((s, c) => s + (c.likes || 0), 0);
 
   const level = getLevel(totalUploads);
   const title = getTitle(level);
@@ -80,36 +74,23 @@ export default function App() {
     setClips((prev) =>
       prev.map((c) =>
         c.id === id
-          ? {
-              ...c,
-              liked: !c.liked,
-              likes: c.likes + (c.liked ? -1 : 1),
-            }
+          ? { ...c, liked: !c.liked, likes: c.likes + (c.liked ? -1 : 1) }
           : c
       )
     );
   }, []);
 
-  /* ================= FILTER ================= */
   const filteredHome = useMemo(() => {
     if (filter === "ALL") return clips;
     return clips.filter((c) => c.type === filter);
   }, [filter, clips]);
 
-  /* ================= HEART ANIM ================= */
+  /* ================= HEART ================= */
   const triggerHeart = () => {
     bigHeart.setValue(0);
     Animated.sequence([
-      Animated.spring(bigHeart, {
-        toValue: 1,
-        friction: 4,
-        useNativeDriver: true,
-      }),
-      Animated.timing(bigHeart, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
+      Animated.spring(bigHeart, { toValue: 1, friction: 4, useNativeDriver: true }),
+      Animated.timing(bigHeart, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start();
   };
 
@@ -137,18 +118,8 @@ export default function App() {
           fontSize: 24,
           opacity: h.anim,
           transform: [
-            {
-              translateY: h.anim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, -180],
-              }),
-            },
-            {
-              scale: h.anim.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [0.6, 1.3, 0.8],
-              }),
-            },
+            { translateY: h.anim.interpolate({ inputRange: [0, 1], outputRange: [0, -180] }) },
+            { scale: h.anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.6, 1.3, 0.8] }) },
           ],
         }}
       >
@@ -156,82 +127,24 @@ export default function App() {
       </Animated.Text>
     ));
 
-  /* ================= ADD CLIP ================= */
-  const addClip = () => {
-    if (!videoInput) return;
-
-    setClips((p) => [
-      ...p,
-      {
-        id: Date.now().toString(),
-        title: "User Upload",
-        type: "USER",
-        tag: "Upload",
-        desc: "User uploaded clip",
-        likes: 0,
-      },
-    ]);
-
-    setVideoInput("");
-  };
-
-  /* ================= HOME ================= */
-  const Home = () => (
-    <View style={{ flex: 1, backgroundColor: "#0a0a0a" }}>
-      <View style={{ padding: 18, paddingTop: 50 }}>
-        <Text style={{ color: "white", fontSize: 26 }}>PKVault</Text>
-        <Text style={{ color: "#888" }}>OSRS PK Feed System</Text>
-      </View>
-
-      <ScrollView horizontal style={{ paddingHorizontal: 10 }}>
-        {FILTERS.map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={{
-              padding: 8,
-              marginRight: 8,
-              borderRadius: 20,
-              backgroundColor: filter === f ? "#00ff88" : "#151515",
-            }}
-          >
-            <Text style={{ color: filter === f ? "#000" : "#aaa" }}>
-              {f}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-
-      <ScrollView style={{ flex: 1 }}>
-        {filteredHome.map((clip) => (
-          <View
-            key={clip.id}
-            style={{
-              margin: 12,
-              padding: 14,
-              backgroundColor: "#151515",
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: "white" }}>{clip.title}</Text>
-            <Text style={{ color: "#888" }}>
-              {clip.type} • {clip.tag}
-            </Text>
-            <Text style={{ color: "#666", marginTop: 4 }}>{clip.desc}</Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
   /* ================= KO ================= */
   const KOs = () => (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
+
       <FlatList
         data={clips}
         keyExtractor={(i) => i.id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ flexGrow: 1 }}
+        onMomentumScrollEnd={() => {
+          progress.setValue(0);
+          Animated.timing(progress, {
+            toValue: 1,
+            duration: 3500,
+            useNativeDriver: false,
+          }).start();
+        }}
         renderItem={({ item }) => (
           <Pressable
             onPress={() => {
@@ -245,10 +158,7 @@ export default function App() {
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "white", fontSize: 18 }}>
-              {item.title}
-            </Text>
-
+            <Text style={{ color: "white", fontSize: 18 }}>{item.title}</Text>
             <Text style={{ color: "#888", marginTop: 6 }}>
               {item.type} • {item.tag}
             </Text>
@@ -261,6 +171,7 @@ export default function App() {
                   inputRange: [0, 0.2, 1],
                   outputRange: [0, 1, 0],
                 }),
+                zIndex: 5,
               }}
             >
               ❤️
@@ -273,6 +184,7 @@ export default function App() {
                 position: "absolute",
                 right: 14,
                 bottom: TAB_BAR_HEIGHT + 120,
+                zIndex: 10,
               }}
             >
               <Text style={{ fontSize: 24 }}>
@@ -284,132 +196,65 @@ export default function App() {
           </Pressable>
         )}
       />
+
+      {/* 🔥 STABLE PROGRESS BAR */}
+      <View
+        style={{
+          position: "absolute",
+          bottom: TAB_BAR_HEIGHT,
+          left: 0,
+          right: 0,
+          height: 3,
+          backgroundColor: "#222",
+        }}
+      >
+        <Animated.View
+          style={{
+            height: 3,
+            backgroundColor: "#00ff88",
+            width: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: ["0%", "100%"],
+            }),
+          }}
+        />
+      </View>
     </View>
   );
 
-  /* ================= PROFILE (UPDATED OSRS SYSTEM) ================= */
+  /* ================= PROFILE ================= */
   const Profile = () => (
     <ScrollView style={{ flex: 1, backgroundColor: "#0a0a0a" }}>
       <View style={{ alignItems: "center", marginTop: 60 }}>
-        <View
-          style={{
-            width: 90,
-            height: 90,
-            borderRadius: 45,
-            backgroundColor: "#222",
-            overflow: "hidden",
-          }}
-        >
+        <View style={{ width: 90, height: 90, borderRadius: 45, overflow: "hidden", backgroundColor: "#222" }}>
           {profilePic ? (
-            <Image
-              source={{ uri: profilePic }}
-              style={{ width: 90, height: 90 }}
-            />
+            <Image source={{ uri: profilePic }} style={{ width: 90, height: 90 }} />
           ) : (
-            <Text style={{ color: "#666", textAlign: "center", marginTop: 35 }}>
-              No Pic
-            </Text>
+            <Text style={{ color: "#666", marginTop: 35, textAlign: "center" }}>No Pic</Text>
           )}
         </View>
 
-        {/* LEVEL SYSTEM */}
         <Text style={{ color: "white", fontSize: 22, marginTop: 10 }}>
           Level {level}
         </Text>
-
         <Text style={{ color: "#aaa" }}>{title}</Text>
 
-        {/* STATS */}
-        <View style={{ marginTop: 20, alignItems: "center" }}>
-          <Text style={{ color: "#888" }}>
-            Uploads: {totalUploads} • Likes: {totalLikes}
-          </Text>
-        </View>
+        <Text style={{ color: "#888", marginTop: 10 }}>
+          Uploads: {totalUploads} • Likes: {totalLikes}
+        </Text>
 
-        {/* BADGES */}
-        <View
-          style={{
-            flexDirection: "row",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            marginTop: 15,
-            paddingHorizontal: 20,
-          }}
-        >
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginTop: 15 }}>
           {badges.map((b, i) => (
-            <View
-              key={i}
-              style={{
-                backgroundColor: "#151515",
-                padding: 8,
-                margin: 4,
-                borderRadius: 10,
-              }}
-            >
+            <View key={i} style={{ backgroundColor: "#151515", padding: 8, margin: 4, borderRadius: 10 }}>
               <Text style={{ color: "#fff", fontSize: 12 }}>{b}</Text>
             </View>
           ))}
         </View>
-
-        {/* INPUTS */}
-        <TextInput
-          placeholder="Profile picture URL"
-          placeholderTextColor="#555"
-          value={picInput}
-          onChangeText={setPicInput}
-          style={{
-            backgroundColor: "#111",
-            color: "white",
-            width: "85%",
-            marginTop: 25,
-            padding: 10,
-            borderRadius: 10,
-          }}
-        />
-
-        <Pressable
-          onPress={() => setProfilePic(picInput)}
-          style={{
-            marginTop: 10,
-            backgroundColor: "#00ff88",
-            padding: 10,
-            borderRadius: 10,
-          }}
-        >
-          <Text>Set Profile Pic</Text>
-        </Pressable>
-
-        <TextInput
-          placeholder="Video URL"
-          placeholderTextColor="#555"
-          value={videoInput}
-          onChangeText={setVideoInput}
-          style={{
-            backgroundColor: "#111",
-            color: "white",
-            width: "85%",
-            marginTop: 25,
-            padding: 10,
-            borderRadius: 10,
-          }}
-        />
-
-        <Pressable
-          onPress={addClip}
-          style={{
-            marginTop: 10,
-            backgroundColor: "#00ff88",
-            padding: 10,
-            borderRadius: 10,
-          }}
-        >
-          <Text>Add Clip</Text>
-        </Pressable>
       </View>
     </ScrollView>
   );
 
-  /* ================= TAB NAV ================= */
+  /* ================= TAB ================= */
   const TabButton = ({ icon, label, active }) => (
     <Pressable
       onPress={() => setTab(label.toLowerCase())}
@@ -424,25 +269,15 @@ export default function App() {
     </Pressable>
   );
 
-  /* ================= APP ================= */
   return (
     <View style={{ flex: 1 }}>
-      {tab === "home" && <Home />}
+      {tab === "home" && <View style={{ flex: 1, backgroundColor: "#0a0a0a" }} />}
       {tab === "kos" && <KOs />}
       {tab === "browse" && <View style={{ flex: 1, backgroundColor: "#0a0a0a" }} />}
       {tab === "subs" && <View style={{ flex: 1, backgroundColor: "#0a0a0a" }} />}
       {tab === "profile" && <Profile />}
 
-      {/* NAV */}
-      <View
-        style={{
-          flexDirection: "row",
-          height: TAB_BAR_HEIGHT,
-          backgroundColor: "#0a0a0a",
-          borderTopWidth: 1,
-          borderColor: "#1f1f1f",
-        }}
-      >
+      <View style={{ flexDirection: "row", height: TAB_BAR_HEIGHT, backgroundColor: "#0a0a0a", borderTopWidth: 1, borderColor: "#1f1f1f" }}>
         <TabButton icon="🏠" label="Home" active={tab === "home"} />
         <TabButton icon="🔍" label="Browse" active={tab === "browse"} />
         <TabButton icon="KO" label="KOs" active={tab === "kos"} />
